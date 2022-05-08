@@ -1,0 +1,27 @@
+//
+// SPDX-FileCopyrightText: 2022-2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_defaults {
+    name: "libudfpshandler.nothing_defaults",
+    defaults: ["nothing_hardware_biometrics_config_default"],
+    stem: "libudfpshandler",
+    vendor: true,
+    shared_libs: [
+        "libbase",
+    ],
+    header_libs: [
+        "nothingfingerprint_headers",
+    ],
+}
+
+cc_library_shared {
+    name: "libudfpshandler.Spacewar",
+    enabled: select(soong_config_variable("NOTHING_BIOMETRICS_FINGERPRINT", "UDFPS_HANDLER"), {
+        "Spacewar": true,
+        default: false,
+    }),
+    defaults: ["libudfpshandler.nothing_defaults"],
+    srcs: ["Spacewar.cpp"],
+}
