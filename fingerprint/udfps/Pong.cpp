@@ -24,6 +24,12 @@ class PongUdfpsHandler : public UdfpsHandler {
         }
     }
 
+    void onChallengeRevoked() override { onFingerUp(); }
+
+    void cancel() override { onFingerUp(); }
+
+    void onAuthenticationSucceeded() override { onFingerUp(); }
+
   private:
     fingerprint_device_t* mDevice = nullptr;
 };
