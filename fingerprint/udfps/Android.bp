@@ -25,3 +25,13 @@ cc_library_shared {
     defaults: ["libudfpshandler.nothing_defaults"],
     srcs: ["Spacewar.cpp"],
 }
+
+cc_library_shared {
+    name: "libudfpshandler.Pong",
+    enabled: select(soong_config_variable("NOTHING_BIOMETRICS_FINGERPRINT", "UDFPS_HANDLER"), {
+        "Pong": true,
+        default: false,
+    }),
+    defaults: ["libudfpshandler.nothing_defaults"],
+    srcs: ["Pong.cpp"],
+}
