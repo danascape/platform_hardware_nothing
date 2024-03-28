@@ -8,6 +8,14 @@
 
 #include "UdfpsHandler.h"
 
+#include <android-base/file.h>
+
+#define FOD_HBM_PATH "/sys/devices/platform/soc/soc:qcom,dsi-display-primary/force_fod_ui"
+
+static void setFodHbm(bool status) {
+    android::base::WriteStringToFile(status ? "1" : "0", FOD_HBM_PATH);
+}
+
 class PongUdfpsHandler : public UdfpsHandler {
   public:
     void init(fingerprint_device_t* device) override { mDevice = device; }
@@ -24,11 +32,29 @@ class PongUdfpsHandler : public UdfpsHandler {
         }
     }
 
-    void onChallengeRevoked() override { onFingerUp(); }
+    void onEnroll() override { setFodHbm(true); }
 
-    void cancel() override { onFingerUp(); }
+    void onAuthenticate() override { setFodHbm(true); }
 
-    void onAuthenticationSucceeded() override { onFingerUp(); }
+    void onChallengeRevoked() override {
+        setFodHbm(false);
+        onFingerUp();
+    }
+
+    void cancel() override {
+        setFodHbm(false);
+        onFingerUp();
+    }
+
+    void onError(int32_t /*error*/, int32_t /*vendorCode*/) override {
+        setFodHbm(false);
+        onFingerUp();
+    }
+
+    void onAuthenticationSucceeded() override {
+        setFodHbm(false);
+        onFingerUp();
+    }
 
   private:
     fingerprint_device_t* mDevice = nullptr;
