@@ -31,6 +31,7 @@ android_app {
     asset_dirs: select(soong_config_variable("nothing_glyph", "device"), {
         "phone1": ["phone1/assets"],
         "phone2": ["phone2/assets"],
+        "phone3a": ["phone3a/assets"],
         default: [],
     }),
     resource_dirs: select(soong_config_variable("nothing_glyph", "device"), {
@@ -41,6 +42,10 @@ android_app {
         "phone2": [
             "res",
             "phone2/res",
+        ],
+        "phone3a": [
+            "res",
+            "phone3a/res",
         ],
         default: [],
     }),
