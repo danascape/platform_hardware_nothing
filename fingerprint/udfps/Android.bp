@@ -35,3 +35,14 @@ cc_library_shared {
     defaults: ["libudfpshandler.nothing_defaults"],
     srcs: ["Pong.cpp"],
 }
+
+cc_library_shared {
+    name: "libudfpshandler.asteroids",
+    enabled: select(soong_config_variable("NOTHING_BIOMETRICS_FINGERPRINT", "UDFPS_HANDLER"), {
+        "asteroids": true,
+        default: false,
+    }),
+    defaults: ["libudfpshandler.nothing_defaults"],
+    srcs: ["asteroids.cpp"],
+    init_rc: ["libudfpshandler.asteroids.rc"],
+}

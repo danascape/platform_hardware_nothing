@@ -1,0 +1,2 @@
+on boot
+    chown system system /sys/panel_feature/ui_status
