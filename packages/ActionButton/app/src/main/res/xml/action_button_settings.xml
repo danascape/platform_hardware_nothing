@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/action_button_settings_title">
+
+    <PreferenceCategory android:title="@string/action_button_action_title">
+
+        <com.android.settingslib.widget.SelectorWithWidgetPreference
+            android:key="action_torch"
+            android:title="@string/action_button_action_torch"
+            android:summary="@string/action_button_action_torch_summary" />
+
+        <com.android.settingslib.widget.SelectorWithWidgetPreference
+            android:key="action_glyph_torch"
+            android:title="@string/action_button_action_glyph_torch"
+            android:summary="@string/action_button_action_glyph_torch_summary" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

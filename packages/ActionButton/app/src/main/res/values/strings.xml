@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Action Button</string>
+    <string name="action_button_settings_title">Action Button</string>
+    <string name="action_button_settings_summary">Configure the Essential Space key</string>
+    <string name="action_button_action_title">Button Action</string>
+    <string name="action_button_action_torch">Torch</string>
+    <string name="action_button_action_torch_summary">Toggle the rear flashlight</string>
+    <string name="action_button_action_glyph_torch">Glyph Torch</string>
+    <string name="action_button_action_glyph_torch_summary">Toggle all Glyph LEDs as a torch</string>
+</resources>
