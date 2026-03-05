@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.service.quicksettings.TileService
 import android.util.Log
 import com.nothing.thirdparty.IGlyphService
 
@@ -35,12 +36,15 @@ class GlyphTorchController(private val context: Context) : AutoCloseable {
 
     fun toggle() {
         isGlyphOn = !isGlyphOn
-        val frame = IntArray(FRAME_LENGTH) { if (isGlyphOn) MAX_BRIGHTNESS else 0 }
         try {
-            glyphService?.setFrameColors(frame) ?: Log.w(TAG, "Glyph service not connected yet")
+            glyphService?.setGlyphTorch(isGlyphOn) ?: Log.w(TAG, "Glyph service not connected yet")
             Log.d(TAG, "Glyph torch toggled: $isGlyphOn")
+            TileService.requestListeningState(
+                context,
+                ComponentName(PARANOID_GLYPH_PACKAGE, TORCH_TILE_CLASS),
+            )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set glyph frame colors", e)
+            Log.e(TAG, "Failed to toggle glyph torch", e)
             isGlyphOn = !isGlyphOn
         }
     }
@@ -49,7 +53,7 @@ class GlyphTorchController(private val context: Context) : AutoCloseable {
         if (isGlyphOn) {
             // ensure LEDs are off before unbinding
             try {
-                glyphService?.setFrameColors(IntArray(FRAME_LENGTH))
+                glyphService?.setGlyphTorch(false)
             } catch (_: Exception) {}
         }
         context.unbindService(connection)
@@ -61,7 +65,7 @@ class GlyphTorchController(private val context: Context) : AutoCloseable {
         private const val GLYPH_PACKAGE = "com.nothing.thirdparty"
         private const val GLYPH_SERVICE_ACTION = "com.nothing.thirdparty.IGlyphService"
         private const val GLYPH_SERVICE_CLASS = "com.nothing.thirdparty.GlyphService"
-        private const val FRAME_LENGTH = 36 // phone3a: 36 LED channels
-        private const val MAX_BRIGHTNESS = 255
+        private const val PARANOID_GLYPH_PACKAGE = "co.aospa.glyph"
+        private const val TORCH_TILE_CLASS = "co.aospa.glyph.tiles.TorchTileService"
     }
 }
