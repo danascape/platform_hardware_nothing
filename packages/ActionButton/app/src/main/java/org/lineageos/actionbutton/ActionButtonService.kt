@@ -16,6 +16,8 @@ class ActionButtonService : Service() {
     private val glyphTorchControllerDelegate = lazy { GlyphTorchController(this) }
     private val glyphTorchController by glyphTorchControllerDelegate
 
+    private val ringerController by lazy { RingerController(this) }
+
     private val receiver =
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -25,6 +27,7 @@ class ActionButtonService : Service() {
                 Log.d(TAG, "Key press received, action=$action")
                 when (action) {
                     Actions.GLYPH_TORCH -> glyphTorchController.toggle()
+                    Actions.RINGER -> ringerController.toggle()
                     else -> torchController.toggle()
                 }
             }

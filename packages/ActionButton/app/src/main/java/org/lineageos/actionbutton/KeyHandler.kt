@@ -9,8 +9,8 @@ import com.android.internal.os.DeviceKeyHandler
 class KeyHandler(private val context: Context) : DeviceKeyHandler {
 
     override fun handleKeyEvent(event: KeyEvent): KeyEvent? {
-        if (event.action != KeyEvent.ACTION_DOWN) return event
         if (event.keyCode != KeyEvent.KEYCODE_ASSIST) return event
+        if (event.action != KeyEvent.ACTION_DOWN) return event
         if (event.repeatCount != 0) return event
 
         Log.d(TAG, "Essential Space key intercepted")

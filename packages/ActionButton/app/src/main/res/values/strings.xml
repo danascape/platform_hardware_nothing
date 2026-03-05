@@ -7,4 +7,6 @@
     <string name="action_button_action_torch_summary">Toggle the rear flashlight</string>
     <string name="action_button_action_glyph_torch">Glyph Torch</string>
     <string name="action_button_action_glyph_torch_summary">Toggle all Glyph LEDs as a torch</string>
+    <string name="action_button_action_ringer">Ringer Mode</string>
+    <string name="action_button_action_ringer_summary">Cycle through ring, vibrate, and silent</string>
 </resources>

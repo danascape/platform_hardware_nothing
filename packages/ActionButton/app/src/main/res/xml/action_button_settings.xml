@@ -14,6 +14,11 @@
             android:title="@string/action_button_action_glyph_torch"
             android:summary="@string/action_button_action_glyph_torch_summary" />
 
+        <com.android.settingslib.widget.SelectorWithWidgetPreference
+            android:key="action_ringer"
+            android:title="@string/action_button_action_ringer"
+            android:summary="@string/action_button_action_ringer_summary" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>
