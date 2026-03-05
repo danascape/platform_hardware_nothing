@@ -9,12 +9,7 @@ import android.util.Log
 
 class TorchController(context: Context) : AutoCloseable {
     private val cameraManager = context.getSystemService(CameraManager::class.java)
-    private val cameraId: String? =
-        cameraManager.cameraIdList.firstOrNull { id ->
-            cameraManager
-                .getCameraCharacteristics(id)
-                .get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-        }
+    private var cameraId: String? = resolveCameraId()
     private var isTorchOn = false
 
     private val torchCallback =
@@ -29,7 +24,15 @@ class TorchController(context: Context) : AutoCloseable {
         Log.d(TAG, "TorchController initialized, cameraId=$cameraId")
     }
 
+    private fun resolveCameraId(): String? =
+        cameraManager.cameraIdList.firstOrNull { id ->
+            cameraManager
+                .getCameraCharacteristics(id)
+                .get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+        }
+
     fun toggle() {
+        if (cameraId == null) cameraId = resolveCameraId()
         val id =
             cameraId
                 ?: run {
