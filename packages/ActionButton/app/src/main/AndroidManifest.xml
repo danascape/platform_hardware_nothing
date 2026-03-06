@@ -33,22 +33,19 @@
         <!-- Settings entry point, shown inside the Settings app -->
         <activity
             android:name=".settings.SettingsActivity"
+            android:configChanges="orientation|screenSize"
             android:exported="true"
             android:label="@string/action_button_settings_title"
-            android:theme="@style/Theme.CollapsingToolbar.Settings">
+            android:theme="@style/Theme.SubSettingsBase">
             <intent-filter>
                 <action android:name="com.android.settings.action.IA_SETTINGS" />
             </intent-filter>
-
             <meta-data
                 android:name="com.android.settings.category"
                 android:value="com.android.settings.category.ia.homepage" />
             <meta-data
                 android:name="com.android.settings.icon"
                 android:resource="@mipmap/ic_launcher" />
-            <meta-data
-                android:name="com.android.settings.icon_color_scheme"
-                android:value="blue" />
             <meta-data
                 android:name="com.android.settings.summary"
                 android:resource="@string/action_button_settings_summary" />
@@ -58,6 +55,9 @@
             <meta-data
                 android:name="com.android.settings.group_key"
                 android:value="top_level_personalize_category" />
+            <meta-data
+                android:name="com.android.settings.icon_color_scheme"
+                android:value="blue" />
         </activity>
 
     </application>
