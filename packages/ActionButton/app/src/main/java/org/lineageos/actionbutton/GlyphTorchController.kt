@@ -12,12 +12,17 @@ import com.nothing.thirdparty.IGlyphService
 class GlyphTorchController(private val context: Context) : AutoCloseable {
     private var glyphService: IGlyphService? = null
     private var isGlyphOn = false
+    private var pendingToggle = false
 
     private val connection =
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 glyphService = IGlyphService.Stub.asInterface(service)
                 Log.d(TAG, "Glyph service connected")
+                if (pendingToggle) {
+                    pendingToggle = false
+                    toggle()
+                }
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
@@ -35,9 +40,14 @@ class GlyphTorchController(private val context: Context) : AutoCloseable {
     }
 
     fun toggle() {
+        if (glyphService == null) {
+            pendingToggle = !pendingToggle
+            Log.w(TAG, "Glyph service not connected yet, pendingToggle=$pendingToggle")
+            return
+        }
         isGlyphOn = !isGlyphOn
         try {
-            glyphService?.setGlyphTorch(isGlyphOn) ?: Log.w(TAG, "Glyph service not connected yet")
+            glyphService?.setGlyphTorch(isGlyphOn)
             Log.d(TAG, "Glyph torch toggled: $isGlyphOn")
             TileService.requestListeningState(
                 context,
