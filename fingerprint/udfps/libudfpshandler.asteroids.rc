@@ -1,2 +1,5 @@
 on boot
     chown system system /sys/panel_feature/ui_status
+
+on property:vendor.all.modules.ready=1
+    chown system system /proc/touchpanel/fod_mode

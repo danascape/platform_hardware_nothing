@@ -45,4 +45,8 @@ cc_library_shared {
     defaults: ["libudfpshandler.nothing_defaults"],
     srcs: ["asteroids.cpp"],
     init_rc: ["libudfpshandler.asteroids.rc"],
+    cflags: select(soong_config_variable("NOTHING_BIOMETRICS_FINGERPRINT", "USE_LHBM"), {
+        true: ["-DTARGET_USES_LHBM"],
+        default: [],
+    }),
 }
