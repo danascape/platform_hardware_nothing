@@ -1,0 +1,32 @@
+//
+// Copyright (C) The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_binary {
+    name: "android.hardware.vibrator.service.nothing-rt_ics",
+    vendor: true,
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+    relative_install_path: "hw",
+    init_rc: ["android.hardware.vibrator.service.nothing-rt_ics.rc"],
+    vintf_fragments: [
+        "android.hardware.vibrator.service.nothing-rt_ics.xml",
+    ],
+    srcs: [
+        "service.cpp",
+        "Vibrator.cpp",
+    ],
+    shared_libs: [
+        "libcutils",
+        "libutils",
+        "liblog",
+        "libbase",
+        "libbinder_ndk",
+        "libaacvibrator",
+        "libics_haptic",
+        "android.hardware.vibrator-V2-ndk",
+    ],
+}
