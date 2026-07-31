@@ -21,6 +21,8 @@ on post-fs-data
 
 on post-fs-data && property:vendor.vibrator.device=*
     wait ${vendor.vibrator.device}
+    chown system system ${vendor.vibrator.device}
+    chmod 0600 ${vendor.vibrator.device}
     start vendor.vibrator
 
 service vendor.vibrator /vendor/bin/hw/android.hardware.vibrator.service.nothing-rt_ics
