@@ -1,0 +1,4 @@
+# Glyph
+vendor_public_prop(vendor_glyph_prop)
+
+get_prop(appdomain, vendor_glyph_prop)
