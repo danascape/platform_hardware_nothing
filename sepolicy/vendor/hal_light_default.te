@@ -1,0 +1,5 @@
+# Read the shell color the factory recorded
+r_dir_file(hal_light_default, mnt_vendor_file)
+
+# Publish it for the apps
+set_prop(hal_light_default, vendor_glyph_prop)
