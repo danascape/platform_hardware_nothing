@@ -1,7 +1,9 @@
-service vendor.fingerprint-default /vendor/bin/hw/android.hardware.biometrics.fingerprint-service.nothing
-    # "class hal" causes a race condition on some devices due to files created
-    # in /data. As a workaround, postpone startup until later in boot once
-    # /data is mounted.
+on boot
+    chown system system /sys/devices/platform/soc/14017000.dsi/hbm
+    chown system system /sys/panel_feature/hbm_mode
+    chown system system /sys/panel_feature/ui_status
+
+service vendor.fingerprint-nothing /vendor/bin/hw/android.hardware.biometrics.fingerprint-service.nothing
     class late_start
     user system
     group system input uhid

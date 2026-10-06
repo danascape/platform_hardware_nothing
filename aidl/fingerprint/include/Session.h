@@ -5,31 +5,33 @@
  */
 
 #pragma once
-#define LOG_TAG "android.hardware.biometrics.fingerprint-service.nothing"
 
 #include <aidl/android/hardware/biometrics/fingerprint/BnSession.h>
 #include <aidl/android/hardware/biometrics/fingerprint/ISessionCallback.h>
 #include <android/log.h>
 #include <hardware/hardware.h>
 #include <log/log.h>
-#include "fingerprint.h"
+#include "fingerprint-nothing.h"
 
 #include "LockoutTracker.h"
-#include "UdfpsHandler.h"
 
 using ::aidl::android::hardware::biometrics::common::ICancellationSignal;
 using ::aidl::android::hardware::biometrics::common::OperationContext;
 using ::aidl::android::hardware::biometrics::fingerprint::PointerContext;
 using ::aidl::android::hardware::keymaster::HardwareAuthToken;
 
-namespace aidl::android::hardware::biometrics::fingerprint {
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace biometrics {
+namespace fingerprint {
 
 void onClientDeath(void* cookie);
 
 class Session : public BnSession {
   public:
-    Session(fingerprint_device_t* device, UdfpsHandler* udfpsHandler, int userId,
-            std::shared_ptr<ISessionCallback> cb, LockoutTracker lockoutTracker);
+    Session(fingerprint_device_t* device, int32_t userId, std::shared_ptr<ISessionCallback> cb,
+            LockoutTracker lockoutTracker);
     ndk::ScopedAStatus generateChallenge() override;
     ndk::ScopedAStatus revokeChallenge(int64_t challenge) override;
     ndk::ScopedAStatus enroll(const HardwareAuthToken& hat,
@@ -93,8 +95,10 @@ class Session : public BnSession {
 
     // Binder death handler.
     AIBinder_DeathRecipient* mDeathRecipient;
-
-    UdfpsHandler* mUdfpsHandler;
 };
 
-}  // namespace aidl::android::hardware::biometrics::fingerprint
+}  // namespace fingerprint
+}  // namespace biometrics
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

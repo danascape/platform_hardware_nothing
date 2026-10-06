@@ -1,43 +1,41 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
- *               2024 The LineageOS Project
+ * Copyright (C) 2024 The LineageOS Project
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "LockoutTracker.h"
-#include <fingerprint.sysprop.h>
 #include "Fingerprint.h"
-#include "util/Util.h"
 
-using namespace ::android::fingerprint::nothing;
+#include <util/Util.h>
 
-namespace aidl::android::hardware::biometrics::fingerprint {
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace biometrics {
+namespace fingerprint {
 
 void LockoutTracker::reset(bool clearAttemptCounter) {
-    if (clearAttemptCounter) {
-        mFailedCount = 0;
-    }
+    if (clearAttemptCounter) mFailedCount = 0;
     mLockoutTimedStart = 0;
-    mCurrentMode = LockoutMode::kNone;
+    mCurrentMode = LockoutMode::NONE;
 }
 
 void LockoutTracker::addFailedAttempt() {
     mFailedCount++;
-    if (mFailedCount >= LOCKOUT_PERMANENT_THRESHOLD) {
-        mCurrentMode = LockoutMode::kPermanent;
-    } else if (mFailedCount >= LOCKOUT_TIMED_THRESHOLD) {
-        if (mCurrentMode == LockoutMode::kNone) {
-            mCurrentMode = LockoutMode::kTimed;
-            mLockoutTimedStart = Util::getSystemNanoTime();
-        }
+
+    if (mFailedCount >= LOCKOUT_PERMANENT_THRESHOLD)
+        mCurrentMode = LockoutMode::PERMANENT;
+    else if (mFailedCount >= LOCKOUT_TIMED_THRESHOLD) {
+        mCurrentMode = LockoutMode::TIMED;
+        mLockoutTimedStart = Util::getSystemNanoTime();
     }
 }
 
-LockoutTracker::LockoutMode LockoutTracker::getMode() {
-    if (mCurrentMode == LockoutMode::kTimed) {
+LockoutMode LockoutTracker::getMode() {
+    if (mCurrentMode == LockoutMode::TIMED) {
         if (Util::hasElapsed(mLockoutTimedStart, LOCKOUT_TIMED_DURATION)) {
-            mCurrentMode = LockoutMode::kNone;
+            mCurrentMode = LockoutMode::NONE;
             mLockoutTimedStart = 0;
         }
     }
@@ -52,11 +50,13 @@ int64_t LockoutTracker::getLockoutTimeLeft() {
         auto now = Util::getSystemNanoTime();
         auto elapsed = (now - mLockoutTimedStart) / 1000000LL;
         res = LOCKOUT_TIMED_DURATION - elapsed;
-        LOG(INFO) << "elapsed=" << elapsed << " now = " << now
-                  << " mLockoutTimedStart=" << mLockoutTimedStart << " res=" << res;
     }
 
     return res;
 }
 
-}  // namespace aidl::android::hardware::biometrics::fingerprint
+}  // namespace fingerprint
+}  // namespace biometrics
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

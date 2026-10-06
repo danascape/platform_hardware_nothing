@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2024 The LineageOS Project
- *               2024 Paranoid Android
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -9,20 +8,23 @@
 
 #include <aidl/android/hardware/biometrics/fingerprint/BnFingerprint.h>
 
-#include "FingerprintConfig.h"
 #include "LockoutTracker.h"
 #include "Session.h"
-#include "UdfpsHandler.h"
 
+using ::aidl::android::hardware::biometrics::fingerprint::FingerprintSensorType;
 using ::aidl::android::hardware::biometrics::fingerprint::ISession;
 using ::aidl::android::hardware::biometrics::fingerprint::ISessionCallback;
 using ::aidl::android::hardware::biometrics::fingerprint::SensorProps;
 
-namespace aidl::android::hardware::biometrics::fingerprint {
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace biometrics {
+namespace fingerprint {
 
 class Fingerprint : public BnFingerprint {
   public:
-    Fingerprint(std::shared_ptr<FingerprintConfig> config);
+    Fingerprint();
     ~Fingerprint();
 
     ndk::ScopedAStatus getSensorProps(std::vector<SensorProps>* _aidl_return) override;
@@ -31,17 +33,19 @@ class Fingerprint : public BnFingerprint {
                                      std::shared_ptr<ISession>* out) override;
 
   private:
-    fingerprint_device_t* openHal();
-    SensorLocation getSensorLocation();
+    static fingerprint_device_t* openHal();
     static void notify(const fingerprint_msg_t* msg);
 
-    std::shared_ptr<FingerprintConfig> mConfig;
     std::shared_ptr<Session> mSession;
     LockoutTracker mLockoutTracker;
+    FingerprintSensorType mSensorType;
+    int mMaxEnrollmentsPerUser;
 
-    fingerprint_device_t* mDevice = nullptr;
-    UdfpsHandlerFactory* mUdfpsHandlerFactory = nullptr;
-    UdfpsHandler* mUdfpsHandler = nullptr;
+    fingerprint_device_t* mDevice;
 };
 
-}  // namespace aidl::android::hardware::biometrics::fingerprint
+}  // namespace fingerprint
+}  // namespace biometrics
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

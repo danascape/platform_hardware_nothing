@@ -4,4 +4,11 @@
         <version>4</version>
         <fqname>IFingerprint/default</fqname>
     </hal>
+    <hal format="aidl">
+        <name>vendor.goodix.hardware.biometrics.fingerprint</name>
+        <interface>
+            <name>IGoodixFingerprintDaemon</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
 </manifest>

@@ -272,8 +272,7 @@ ndk::ScopedAStatus Vibrator::compose(const std::vector<CompositeEffect>& composi
         uint32_t id;
         int32_t ms;
 
-        if (e.delayMs < 0 || e.delayMs > COMPOSE_DELAY_MAX_MS || e.scale < 0.0f ||
-            e.scale > 1.0f) {
+        if (e.delayMs < 0 || e.delayMs > COMPOSE_DELAY_MAX_MS || e.scale < 0.0f || e.scale > 1.0f) {
             return ndk::ScopedAStatus(AStatus_fromExceptionCode(EX_ILLEGAL_ARGUMENT));
         }
         if (e.primitive != CompositePrimitive::NOOP && !primitiveToEffect(e.primitive, &id, &ms)) {
