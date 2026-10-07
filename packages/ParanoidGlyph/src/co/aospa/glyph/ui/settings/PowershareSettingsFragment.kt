@@ -13,4 +13,5 @@ class PowershareSettingsFragment : GlyphToggleFragment() {
     override val screen = R.xml.glyph_powershare_settings
     override val title = R.string.pref_powershare_title
     override val switchKey = GlyphPreferences.KEY_POWERSHARE
+    override val previewKey = "glyph_powershare_preview"
 }
