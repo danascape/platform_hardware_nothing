@@ -48,6 +48,9 @@ ndk::ScopedAStatus Session::generateChallenge() {
 
 ndk::ScopedAStatus Session::revokeChallenge(int64_t challenge) {
     ALOGI("revokeChallenge: %ld", challenge);
+    if (mUdfpsHandler) {
+        mUdfpsHandler->onChallengeRevoked();
+    }
 
 #ifndef IMPL_V2
     mDevice->post_enroll(mDevice);
@@ -61,6 +64,10 @@ ndk::ScopedAStatus Session::revokeChallenge(int64_t challenge) {
 
 ndk::ScopedAStatus Session::enroll(const HardwareAuthToken& hat,
                                    std::shared_ptr<ICancellationSignal>* out) {
+    if (mUdfpsHandler) {
+        mUdfpsHandler->onEnroll();
+    }
+
     hw_auth_token_t authToken;
     translate(hat, authToken);
 #ifndef IMPL_V2
@@ -80,6 +87,9 @@ ndk::ScopedAStatus Session::enroll(const HardwareAuthToken& hat,
 ndk::ScopedAStatus Session::authenticate(int64_t operationId,
                                          std::shared_ptr<ICancellationSignal>* out) {
     checkSensorLockout();
+    if (mUdfpsHandler) {
+        mUdfpsHandler->onAuthenticate();
+    }
 #ifndef IMPL_V2
     int error = mDevice->authenticate(mDevice, operationId, mUserId);
 #else
@@ -106,6 +116,10 @@ ndk::ScopedAStatus Session::enumerateEnrollments() {
     int error = mDevice->enumerate(mDevice);
     if (error) {
         ALOGE("enumerate failed: %d", error);
+    }
+
+    if (mUdfpsHandler) {
+        mUdfpsHandler->onEnumerate();
     }
 
     return ndk::ScopedAStatus::ok();
@@ -185,7 +199,9 @@ ndk::ScopedAStatus Session::onPointerUp(int32_t /*pointerId*/) {
 }
 
 ndk::ScopedAStatus Session::onUiReady() {
-    // TODO: stub
+    if (mUdfpsHandler) {
+        mUdfpsHandler->onUiReady();
+    }
 
     return ndk::ScopedAStatus::ok();
 }
@@ -224,7 +240,11 @@ ndk::ScopedAStatus Session::onPointerCancelWithContext(const PointerContext& /*c
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus Session::setIgnoreDisplayTouches(bool /*shouldIgnore*/) {
+ndk::ScopedAStatus Session::setIgnoreDisplayTouches(bool shouldIgnore) {
+    if (mUdfpsHandler) {
+        mUdfpsHandler->setIgnoreDisplayTouches(shouldIgnore);
+    }
+
     return ndk::ScopedAStatus::ok();
 }
 
@@ -244,6 +264,10 @@ ndk::ScopedAStatus Session::cancel() {
 }
 
 ndk::ScopedAStatus Session::close() {
+    if (mUdfpsHandler) {
+        mUdfpsHandler->onSessionClosed();
+    }
+
     mClosed = true;
     mCb->onSessionClosed();
     AIBinder_DeathRecipient_delete(mDeathRecipient);
@@ -368,6 +392,9 @@ void Session::notify(const fingerprint_msg_t* msg) {
             Error result = VendorErrorFilter(msg->data.error, &vendorCode);
             ALOGD("onError(%hhd, %d)", result, vendorCode);
             mCb->onError(result, vendorCode);
+            if (mUdfpsHandler) {
+                mUdfpsHandler->onError(msg->data.error, vendorCode);
+            }
         } break;
         case FINGERPRINT_ACQUIRED: {
             int32_t vendorCode = 0;
