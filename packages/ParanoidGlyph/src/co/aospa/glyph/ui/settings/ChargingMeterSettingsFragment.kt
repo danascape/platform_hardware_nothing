@@ -13,4 +13,5 @@ class ChargingMeterSettingsFragment : GlyphToggleFragment() {
     override val screen = R.xml.glyph_charging_meter_settings
     override val title = R.string.pref_charging_meter_title
     override val switchKey = GlyphPreferences.KEY_CHARGING_METER
+    override val previewKey = "glyph_charging_meter_preview"
 }
