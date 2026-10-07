@@ -4,12 +4,10 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:settings="http://schemas.android.com/apk/res-auto"
     android:title="@string/pref_powershare_title">
 
     <com.android.settingslib.widget.IllustrationPreference
-        android:key="glyph_powershare_preview"
-        settings:lottie_rawRes="@raw/glyph_powershare_preview" />
+        android:key="glyph_powershare_preview" />
 
     <com.android.settingslib.widget.MainSwitchPreference
         android:defaultValue="false"
