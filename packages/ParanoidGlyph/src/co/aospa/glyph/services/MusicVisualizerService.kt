@@ -5,286 +5,309 @@
 
 package co.aospa.glyph.services
 
-import android.app.Service
-import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
 import android.media.audiofx.Visualizer
-import android.os.IBinder
-import co.aospa.glyph.manager.AnimationManager
-import co.aospa.glyph.utils.Constants
+import android.util.Log
+import androidx.lifecycle.lifecycleScope
+import co.aospa.glyph.data.model.VisualizerBand
+import co.aospa.glyph.system.GlyphStream
+import co.aospa.glyph.util.glyph
+import co.aospa.glyph.util.requireSystemService
 import kotlin.math.sqrt
-import kotlinx.coroutines.CoroutineScope
+import kotlin.time.Duration
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-
-private const val FFT_BUCKETS = 100
-private const val NOISE_FLOOR = 10.0f
-private const val NORMALIZE_DIVISOR = 195.0
-private const val NORMALIZE_SCALE = 2.5
-private const val MIN_BAND_ENERGY = 0.02
-private const val SILENCE_RMS_MB = -6000
-private const val SIGNAL_RMS_MB = -5700
-private const val SIGNAL_CONFIRMATION_FRAMES = 3
-private const val SILENCE_CONFIRMATION_FRAMES = 5
-
-/** One band's FFT bucket range and its adaptive trigger/decay tuning. */
-private data class BandConfig(
-    val bucketStart: Int,
-    val bucketCount: Int,
-    val decayWindowMs: Long,
-    val triggerRatio: Double,
-    val triggerDecay: Double,
-    val ceilingDecay: Double,
-)
-
-/** Nothing's AudioReactiveGlyph tuning, 5-channel config. */
-private val BAND_CONFIGS =
-    listOf(
-        BandConfig(8, 4, 1000, 0.75, 0.56, 0.65),
-        BandConfig(15, 8, 500, 0.7, 0.66, 0.65),
-        BandConfig(0, 1, 300, 0.75, 0.56, 0.95),
-        BandConfig(30, 15, 200, 0.7, 0.66, 0.63),
-        BandConfig(55, 20, 100, 0.7, 0.66, 0.63),
-    )
-
-private class BandState {
-    private var ceiling = 0.0
-    private var lastBeatTime = 0L
-    var brightness = 0.0
-        private set
-
-    fun reset() {
-        ceiling = 0.0
-        lastBeatTime = 0L
-        brightness = 0.0
-    }
-
-    fun update(value: Double, config: BandConfig, now: Long) {
-        if (value > ceiling) ceiling = value
-
-        if (value > MIN_BAND_ENERGY && value >= ceiling * config.triggerRatio) {
-            brightness = 1.0
-            lastBeatTime = now
-        } else {
-            decayBrightness(config)
-        }
-
-        if (now - lastBeatTime > config.decayWindowMs && value < ceiling * config.triggerRatio) {
-            ceiling = maxOf(ceiling * config.ceilingDecay, MIN_BAND_ENERGY / config.triggerRatio)
-        }
-    }
-
-    fun decayBrightness(config: BandConfig) {
-        brightness *= config.triggerDecay
-        if (brightness < 0.05) brightness = 0.0
-    }
-}
-
-/** The active media playback's session ID, or null if none is playing. */
-private fun List<AudioPlaybackConfiguration>.activeMediaSessionId(): Int? =
-    firstOrNull { it.audioAttributes.usage == AudioAttributes.USAGE_MEDIA && it.isActive }
-        ?.sessionId
+import kotlinx.coroutines.withContext
 
 /**
- * Drives the Glyph LEDs from the live output mix's FFT.
+ * Drives the strips from the live output mix's fft, while media is playing and the setting is on.
  *
  * Each band tracks its own adaptive peak, so a beat is a value clearing a fraction of that band's
  * recent ceiling rather than a fixed threshold, and brightness decays exponentially between beats
- * instead of a fixed-length flash. FFT captures are volume-normalized while the unscaled RMS level
+ * instead of a fixed-length flash. Captures are volume-normalized, while the unscaled rms level
  * gates silence and quiet track endings.
  */
-class MusicVisualizerService : Service() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
-    private val audioManager by lazy { getSystemService(AudioManager::class.java) }
-    private var visualizer: Visualizer? = null
-    private var sessionId: Int? = null
+class MusicVisualizerService : FeatureService(TAG) {
+    companion object {
+        private const val TAG = "GlyphMusicVisualizerService"
 
-    private val bands = List(BAND_CONFIGS.size) { BandState() }
+        /** How many buckets the fft is summed into. */
+        private const val FFT_BUCKETS = 100
+
+        /** What a bucket has to clear to count as more than noise. */
+        private const val NOISE_FLOOR = 10.0f
+
+        /** What a bucket is divided by and scaled to, to land in 0..1. */
+        private const val NORMALIZE_DIVISOR = 195.0
+        private const val NORMALIZE_SCALE = 2.5
+
+        /** What a band has to hold to be worth lighting at all. */
+        private const val MIN_BAND_ENERGY = 0.02
+
+        /** Where silence begins and signal resumes, in millibels. */
+        private const val SILENCE_RMS_MB = -6000
+        private const val SIGNAL_RMS_MB = -5700
+
+        /** How many frames a change has to hold for before it is taken. */
+        private const val SIGNAL_CONFIRMATION_FRAMES = 3
+        private const val SILENCE_CONFIRMATION_FRAMES = 5
+
+        /** What a band is dark enough to be called dark at. */
+        private const val DARK_BRIGHTNESS = 0.05
+    }
+
+    /** How bright one band is, against the loudest it has lately been. */
+    private class BandState {
+        private var ceiling = 0.0
+
+        /** When the band last beat, or null if it has not since it was reset. */
+        private var lastBeat: TimeMark? = null
+
+        var brightness = 0.0
+            private set
+
+        fun reset() {
+            ceiling = 0.0
+            lastBeat = null
+            brightness = 0.0
+        }
+
+        fun update(value: Double, config: VisualizerBand) {
+            if (value > ceiling) ceiling = value
+
+            val sinceBeat = lastBeat?.elapsedNow() ?: Duration.INFINITE
+            if (
+                sinceBeat >= config.retrigger &&
+                    value > MIN_BAND_ENERGY &&
+                    value >= ceiling * config.triggerRatio
+            ) {
+                brightness = 1.0
+                lastBeat = TimeSource.Monotonic.markNow()
+            } else {
+                decayBrightness(config)
+            }
+
+            if (sinceBeat > config.decayWindow && value < ceiling * config.triggerRatio) {
+                ceiling =
+                    maxOf(ceiling * config.ceilingDecay, MIN_BAND_ENERGY / config.triggerRatio)
+            }
+        }
+
+        fun decayBrightness(config: VisualizerBand) {
+            brightness *= config.triggerDecay
+            if (brightness < DARK_BRIGHTNESS) brightness = 0.0
+        }
+    }
+
+    private val audioManager by lazy { requireSystemService<AudioManager>() }
+
+    private val bandConfigs by lazy { glyph.config.visualizerBands }
+    private val bands by lazy { List(bandConfigs.size) { BandState() } }
     private val measurement = Visualizer.MeasurementPeakRms()
-    private var signalPresent = false
+    private var isSignalPresent = false
     private var signalConfirmationFrames = 0
     private var wasSilent = true
 
-    private val dataCaptureListener =
-        object : Visualizer.OnDataCaptureListener {
-            override fun onWaveFormDataCapture(
-                visualizer: Visualizer,
-                waveform: ByteArray,
-                samplingRate: Int,
-            ) {}
+    /** The session media is playing on, as it is now and each time it changes, or null. */
+    private val activeSessionId: Flow<Int?> =
+        callbackFlow {
+                val callback =
+                    object : AudioManager.AudioPlaybackCallback() {
+                        override fun onPlaybackConfigChanged(
+                            configs: MutableList<AudioPlaybackConfiguration>
+                        ) {
+                            trySend(configs.activeMediaSessionId())
+                        }
+                    }
 
-            override fun onFftDataCapture(
-                visualizer: Visualizer,
-                fft: ByteArray,
-                samplingRate: Int,
-            ) {
-                if (visualizer !== this@MusicVisualizerService.visualizer) return
-                processFft(visualizer, fft)
+                audioManager.registerAudioPlaybackCallback(callback, null)
+                trySend(audioManager.activePlaybackConfigurations.activeMediaSessionId())
+                awaitClose { audioManager.unregisterAudioPlaybackCallback(callback) }
             }
-        }
-
-    private val playbackCallback =
-        object : AudioManager.AudioPlaybackCallback() {
-            override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
-                updateVisualizer(configs.activeMediaSessionId())
-            }
-        }
+            .distinctUntilChanged()
 
     override fun onCreate() {
-        audioManager.registerAudioPlaybackCallback(playbackCallback, null)
-        updateVisualizer(audioManager.activePlaybackConfigurations.activeMediaSessionId())
-    }
+        super.onCreate()
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
-    }
-
-    override fun onDestroy() {
-        audioManager.unregisterAudioPlaybackCallback(playbackCallback)
-        releaseVisualizer()
-        scope.cancel()
-        super.onDestroy()
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun updateVisualizer(activeSessionId: Int?) {
-        scope.launch {
-            if (activeSessionId == null) {
-                releaseVisualizer()
-            } else {
-                attachVisualizer(activeSessionId)
-            }
+        lifecycleScope.launch {
+            // A new session cancels the one before it, which lets go of its visualizer.
+            activeSessionId.collectLatest { sessionId -> sessionId?.let { visualize(it) } }
         }
     }
 
-    private fun attachVisualizer(newSessionId: Int) {
-        if (newSessionId == sessionId && visualizer != null) return
-        releaseVisualizer()
-        sessionId = newSessionId
-        try {
-            val newVisualizer = Visualizer(newSessionId)
-            visualizer = newVisualizer
-            newVisualizer.apply {
-                setServerDiedListener {
-                    if (this@MusicVisualizerService.visualizer === newVisualizer)
-                        releaseVisualizer()
+    /** The session media is playing on, or null where nothing is. */
+    private fun List<AudioPlaybackConfiguration>.activeMediaSessionId(): Int? =
+        firstOrNull { it.audioAttributes.usage == AudioAttributes.USAGE_MEDIA && it.isActive }
+            ?.sessionId
+
+    /** Lights the strips to a session's output, until this is canceled or the session ends. */
+    private suspend fun visualize(sessionId: Int) =
+        withContext(Dispatchers.Default) {
+            val visualizer = openVisualizer(sessionId) ?: return@withContext
+
+            try {
+                frames(visualizer).collect { fft -> processFft(visualizer, fft) }
+            } finally {
+                bands.forEach { it.reset() }
+                isSignalPresent = false
+                signalConfirmationFrames = 0
+                wasSilent = true
+                glyph.animator.endFrames(GlyphStream.VISUALIZER)
+
+                try {
+                    visualizer.enabled = false
+                } catch (e: RuntimeException) {
+                    // The audio server may already be gone.
+                } finally {
+                    visualizer.release()
                 }
+            }
+        }
+
+    /** A visualizer set up to read a session's fft, or null where that cannot be done. */
+    private fun openVisualizer(sessionId: Int): Visualizer? {
+        val visualizer =
+            try {
+                Visualizer(sessionId)
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Could not listen to session $sessionId: $e")
+                return null
+            }
+
+        return try {
+            visualizer.apply {
                 captureSize = Visualizer.getCaptureSizeRange()[1]
                 scalingMode = Visualizer.SCALING_MODE_NORMALIZED
                 measurementMode = Visualizer.MEASUREMENT_MODE_PEAK_RMS
-                setDataCaptureListener(
-                    dataCaptureListener,
+            }
+        } catch (e: RuntimeException) {
+            // It holds an audio effect until released, so a failed setup must not keep it.
+            visualizer.release()
+            Log.w(TAG, "Could not set up listening to session $sessionId: $e")
+            null
+        }
+    }
+
+    /** The fft of each capture, newest first where they come faster than they are read. */
+    private fun frames(visualizer: Visualizer): Flow<ByteArray> =
+        callbackFlow {
+                visualizer.setServerDiedListener { close() }
+                visualizer.setDataCaptureListener(
+                    object : Visualizer.OnDataCaptureListener {
+                        override fun onWaveFormDataCapture(
+                            visualizer: Visualizer,
+                            waveform: ByteArray,
+                            samplingRate: Int,
+                        ) {
+                            // Only the fft is asked for.
+                        }
+
+                        override fun onFftDataCapture(
+                            visualizer: Visualizer,
+                            fft: ByteArray,
+                            samplingRate: Int,
+                        ) {
+                            // The capture is reused, so it is copied before it is read later.
+                            trySend(fft.copyOf())
+                        }
+                    },
                     Visualizer.getMaxCaptureRate(),
                     false,
                     true,
                 )
-                enabled = true
-            }
-        } catch (_: RuntimeException) {
-            releaseVisualizer()
-        }
-    }
+                visualizer.enabled = true
 
-    private fun releaseVisualizer() {
-        sessionId = null
-        val releasedVisualizer = visualizer
-        visualizer = null
-        bands.forEach { it.reset() }
-        signalPresent = false
-        signalConfirmationFrames = 0
-        wasSilent = true
-        AnimationManager.updateLedFrame(IntArray(bands.size))
-        try {
-            releasedVisualizer?.apply {
-                enabled = false
-                release()
+                awaitClose {}
             }
-        } catch (_: RuntimeException) {
-            // The audio server may already be unavailable.
-        }
-    }
+            .conflate()
 
     private fun processFft(visualizer: Visualizer, fft: ByteArray) {
         val buckets = bucketMagnitudes(fft)
-        val bandEnergies =
-            DoubleArray(BAND_CONFIGS.size) { i ->
-                val config = BAND_CONFIGS[i]
-                buckets
-                    .slice(config.bucketStart until config.bucketStart + config.bucketCount)
-                    .average()
+        val energies =
+            DoubleArray(bandConfigs.size) { band ->
+                val config = bandConfigs[band]
+                buckets.slice(config.buckets).average()
             }
-        if (!hasAudibleSignal(visualizer) || bandEnergies.all { it <= MIN_BAND_ENERGY }) {
+
+        if (!hasAudibleSignal(visualizer) || energies.all { it <= MIN_BAND_ENERGY }) {
             fadeToSilence()
             return
         }
         wasSilent = false
 
-        val now = System.currentTimeMillis()
-        bands.forEachIndexed { i, state -> state.update(bandEnergies[i], BAND_CONFIGS[i], now) }
+        bands.forEachIndexed { index, band -> band.update(energies[index], bandConfigs[index]) }
 
-        val maxBrightness = Constants.getMaxBrightness()
-        writeLedFrame(IntArray(bands.size) { i -> (bands[i].brightness * maxBrightness).toInt() })
+        writeFrame()
     }
 
+    /** Whether something is playing, once a change has held for a few frames. */
     private fun hasAudibleSignal(visualizer: Visualizer): Boolean {
         if (visualizer.getMeasurementPeakRms(measurement) != Visualizer.SUCCESS) {
-            return signalPresent
+            return isSignalPresent
         }
-        val threshold = if (signalPresent) SILENCE_RMS_MB else SIGNAL_RMS_MB
-        val signalDetected = measurement.mRms > threshold
-        if (signalDetected == signalPresent) {
+
+        val threshold = if (isSignalPresent) SILENCE_RMS_MB else SIGNAL_RMS_MB
+        val isDetected = measurement.mRms > threshold
+
+        if (isDetected == isSignalPresent) {
             signalConfirmationFrames = 0
-        } else {
-            val confirmationFrames =
-                if (signalDetected) {
-                    SIGNAL_CONFIRMATION_FRAMES
-                } else {
-                    SILENCE_CONFIRMATION_FRAMES
-                }
-            if (++signalConfirmationFrames >= confirmationFrames) {
-                signalPresent = signalDetected
-                signalConfirmationFrames = 0
-            }
+            return isSignalPresent
         }
-        return signalPresent
+
+        val needed = if (isDetected) SIGNAL_CONFIRMATION_FRAMES else SILENCE_CONFIRMATION_FRAMES
+        if (++signalConfirmationFrames >= needed) {
+            isSignalPresent = isDetected
+            signalConfirmationFrames = 0
+        }
+
+        return isSignalPresent
     }
 
+    /** Lets the bands decay rather than cutting them off at a track's end. */
     private fun fadeToSilence() {
-        bands.forEachIndexed { i, state -> state.decayBrightness(BAND_CONFIGS[i]) }
+        bands.forEachIndexed { i, band -> band.decayBrightness(bandConfigs[i]) }
+
         if (bands.all { it.brightness == 0.0 }) {
             if (!wasSilent) {
                 bands.forEach { it.reset() }
                 wasSilent = true
-                writeLedFrame(IntArray(bands.size))
+                writeFrame()
             }
             return
         }
 
         wasSilent = false
-        val maxBrightness = Constants.getMaxBrightness()
-        writeLedFrame(IntArray(bands.size) { i -> (bands[i].brightness * maxBrightness).toInt() })
+        writeFrame()
     }
 
-    private fun writeLedFrame(pattern: IntArray) {
-        scope.launch { AnimationManager.updateLedFrame(pattern) }
+    private fun writeFrame() {
+        val maxBrightness = glyph.config.maxBrightness
+        val levels = FloatArray(bands.size) { (bands[it].brightness * maxBrightness).toFloat() }
+        glyph.animator.setFrame(GlyphStream.VISUALIZER, glyph.config.spreadBands(levels))
     }
 
+    /** Sums the fft into [FFT_BUCKETS] magnitudes, above the noise floor. */
     private fun bucketMagnitudes(fft: ByteArray): DoubleArray {
-        val numComplexBins = (fft.size / 2) - 1
-        val binsPerBucket = numComplexBins / FFT_BUCKETS
+        val bins = (fft.size / 2) - 1
+        val binsPerBucket = bins / FFT_BUCKETS
+
         return DoubleArray(FFT_BUCKETS) { i ->
             var sum = 0f
             for (j in 0 until binsPerBucket) {
-                val bin = 1 + (i * binsPerBucket) + j
-                val idx = bin * 2
-                val re = fft[idx].toFloat()
-                val im = fft[idx + 1].toFloat()
-                sum += (sqrt(re * re + im * im) - NOISE_FLOOR).coerceAtLeast(0f)
+                val offset = (1 + (i * binsPerBucket) + j) * 2
+                val real = fft[offset].toFloat()
+                val imaginary = fft[offset + 1].toFloat()
+                sum += (sqrt(real * real + imaginary * imaginary) - NOISE_FLOOR).coerceAtLeast(0f)
             }
             (sum / binsPerBucket / NORMALIZE_DIVISOR) * NORMALIZE_SCALE
         }
