@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-android_library {
-    name: "ParanoidGlyph-core",
+android_app {
+    name: "ParanoidGlyph",
 
     srcs: [
         "src/**/*.java",
@@ -14,19 +14,36 @@ android_library {
     static_libs: [
         "IGlyphService-java",
         "SettingsLib",
+        "SettingsLibButtonPreference",
+        "SettingsLibSettingsTheme",
         "SettingsLibSliderPreference",
-        "androidx.core_core",
+        "androidx.activity_activity-ktx",
+        "androidx.core_core-ktx",
+        "androidx.fragment_fragment-ktx",
+        "androidx.lifecycle_lifecycle-runtime-ktx",
+        "androidx.lifecycle_lifecycle-service",
         "androidx.preference_preference",
         "com.google.android.material_material",
     ],
 
-    platform_apis: true,
-}
+    kotlincflags: ["-Xjvm-default=all"],
 
-java_defaults {
-    name: "ParanoidGlyph-defaults",
-
-    static_libs: ["ParanoidGlyph-core"],
+    asset_dirs: select(soong_config_variable("nothing_glyph", "device"), {
+        "phone1": ["phone1/assets"],
+        "phone2": ["phone2/assets"],
+        default: [],
+    }),
+    resource_dirs: select(soong_config_variable("nothing_glyph", "device"), {
+        "phone1": [
+            "res",
+            "phone1/res",
+        ],
+        "phone2": [
+            "res",
+            "phone2/res",
+        ],
+        default: [],
+    }),
 
     platform_apis: true,
     certificate: "platform",
@@ -38,24 +55,6 @@ java_defaults {
         "GlyphAdapter",
         "whitelist_co.aospa.glyph",
     ],
-}
-
-android_app {
-    name: "ParanoidGlyphPhone1",
-
-    defaults: ["ParanoidGlyph-defaults"],
-
-    asset_dirs: ["phone1/assets"],
-    resource_dirs: ["phone1/res"],
-}
-
-android_app {
-    name: "ParanoidGlyphPhone2",
-
-    defaults: ["ParanoidGlyph-defaults"],
-
-    asset_dirs: ["phone2/assets"],
-    resource_dirs: ["phone2/res"],
 }
 
 prebuilt_etc {

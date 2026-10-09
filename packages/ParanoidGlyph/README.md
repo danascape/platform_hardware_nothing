@@ -6,17 +6,19 @@ what each pattern does.
 
 ## What it supports
 
-| Device | Codename | Module |
+| Device | Codename | Soong config |
 |---|---|---|
-| Phone (1) | Spacewar | `ParanoidGlyphPhone1` |
-| Phone (2) | Pong | `ParanoidGlyphPhone2` |
+| Phone (1) | Spacewar | `phone1` |
+| Phone (2) | Pong | `phone2` |
 
 ## Setup
 
-To build the app, add the module for your device from the table above to
-`PRODUCT_PACKAGES`. Example:
+To build the app, add it to `PRODUCT_PACKAGES` and set the Soong config for
+your device from the table above. Example:
 ```make
 # Paranoid Glyph
 PRODUCT_PACKAGES += \
-    ParanoidGlyphPhone1
+    ParanoidGlyph
+
+$(call soong_config_set,nothing_glyph,device,phone1)
 ```
