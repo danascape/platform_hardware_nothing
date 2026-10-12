@@ -14,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.TwoStatePreference
 import co.aospa.glyph.util.glyph
-import com.android.settingslib.widget.IllustrationPreference
 import com.android.settingslib.widget.SettingsBasePreferenceFragment
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -36,15 +35,7 @@ abstract class GlyphToggleFragment : SettingsBasePreferenceFragment() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(screen)
         activity?.setTitle(title)
-        showPreview()
-    }
-
-    /** Plays the preview, or hides it where the device ships none. */
-    private fun showPreview() {
-        val key = previewKey ?: return
-        val preview = findPreference<IllustrationPreference>(key) ?: return
-        val raw = resources.getIdentifier(key, "raw", requireContext().packageName)
-        if (raw != 0) preview.setLottieAnimationResId(raw) else preview.isVisible = false
+        previewKey?.let { showPreview(it) }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
