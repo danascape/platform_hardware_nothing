@@ -20,15 +20,25 @@ compile_error!("Set the nothing_glyph device soong config to a phone this servic
 pub use camera::CameraCodes;
 pub use layout::{Group, Layout, Segments};
 pub use phone::DEVICE;
-pub use shell::{Ceiling, Shell};
+pub use shell::{Shell, ShellLevel};
 
 use std::io::Result;
 
 use crate::controller::{Controller, Node};
 
-/// A phone: the controller it carries, and how it wires and uses it.
-#[derive(Clone)]
-pub struct Device {
+/// The recording indicator, on an LED of its own that no frame reaches.
+#[derive(Clone, Copy)]
+pub struct IndicatorLed<Level = u32> {
+    /// The LED it sits on.
+    pub led: usize,
+
+    /// The level it lights at.
+    pub level: Level,
+}
+
+/// A phone: the controller it carries, and how it wires and uses it. Its levels are given for each
+/// shell until it is fitted for its own.
+pub struct Device<Level = u32> {
     pub controller: &'static Controller,
 
     /// The directory the driver registered its nodes in.
@@ -38,16 +48,10 @@ pub struct Device {
     pub segments: usize,
 
     /// Highest level the nodes accept.
-    pub max_brightness: u32,
+    pub max_brightness: Level,
 
-    /// The LED the recording indicator sits on, which no frame reaches.
-    indicator: usize,
-
-    /// The level the indicator lights at.
-    pub indicator_level: u32,
-
-    /// What the two above are held to on a white shell.
-    white: Ceiling,
+    /// The recording indicator, where the phone has one.
+    pub indicator: Option<IndicatorLed<Level>>,
 
     pub layout: Layout,
 
@@ -55,17 +59,25 @@ pub struct Device {
     pub camera: CameraCodes,
 }
 
-impl Device {
+impl Device<ShellLevel> {
     /// This phone fitted for its shell.
     pub fn for_shell(&self, shell: Shell) -> Device {
-        let mut device = self.clone();
-        if shell == Shell::White {
-            device.max_brightness = self.white.max_brightness;
-            device.indicator_level = self.white.indicator_level;
+        Device {
+            controller: self.controller,
+            dir: self.dir,
+            segments: self.segments,
+            max_brightness: self.max_brightness.for_shell(shell),
+            indicator: self.indicator.map(|indicator| IndicatorLed {
+                led: indicator.led,
+                level: indicator.level.for_shell(shell),
+            }),
+            layout: self.layout,
+            camera: self.camera,
         }
-        device
     }
+}
 
+impl Device {
     /// Draws one frame: every segment's level, in order.
     pub fn write_frame(&self, levels: &[u32]) -> Result<()> {
         let levels = levels.iter().map(|&level| self.clamp(level)).collect::<Vec<_>>();
@@ -79,11 +91,9 @@ impl Device {
         self.controller.write(self.dir, Node::All, &level.to_string(), level > 0)
     }
 
-    /// Lights the recording indicator, which no frame can reach.
-    pub fn write_indicator(&self, level: u32) -> Result<()> {
-        let level = level.min(self.indicator_level);
-        let value = format!("{} {level}", self.indicator);
-        self.controller.write(self.dir, Node::Single, &value, level > 0)
+    /// Lights one LED on its own, outside any frame.
+    pub fn write_led(&self, led: usize, level: u32) -> Result<()> {
+        self.controller.write(self.dir, Node::Single, &format!("{led} {level}"), level > 0)
     }
 
     fn clamp(&self, level: u32) -> u32 {

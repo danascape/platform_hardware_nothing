@@ -10,14 +10,21 @@ use std::fs;
 use log::warn;
 use rustutils::android::system_properties;
 
-/// How bright the strips may be.
+/// A level for each color of shell.
 #[derive(Clone, Copy)]
-pub struct Ceiling {
-    /// Highest level the nodes accept.
-    pub max_brightness: u32,
+pub struct ShellLevel {
+    pub black: u32,
+    pub white: u32,
+}
 
-    /// The level the recording indicator lights at.
-    pub indicator_level: u32,
+impl ShellLevel {
+    /// The level for this shell.
+    pub fn for_shell(self, shell: Shell) -> u32 {
+        match shell {
+            Shell::Black => self.black,
+            Shell::White => self.white,
+        }
+    }
 }
 
 /// The color of a phone's shell. A white one diffuses more light, so its strips take less.
