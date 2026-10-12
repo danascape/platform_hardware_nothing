@@ -19,6 +19,20 @@
         <item>@integer/config_brightnessMax</item>
     </integer-array>
 
+    <!-- The glyphs of the device drawing. -->
+    <array name="config_glyphViews" translatable="false">
+        <item>@id/preview_device_a1</item>
+        <item>@id/preview_device_b1</item>
+        <item>@id/preview_device_a2</item>
+    </array>
+
+    <!-- The channels each glyph of the drawing shows, in the order of the glyphs above. -->
+    <string-array name="config_glyphViewZones" translatable="false">
+        <item>0-19</item> <!-- a1 -->
+        <item>20-30</item> <!-- b1 -->
+        <item>31-35</item> <!-- a2 -->
+    </string-array>
+
     <!-- How many levels a csv line may carry, one entry per width accepted. -->
     <integer-array name="config_patternLengths" translatable="false">
         <item>36</item>
