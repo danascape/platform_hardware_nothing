@@ -19,4 +19,20 @@
         <item>@integer/config_brightnessMax</item>
     </integer-array>
 
+    <!-- How many levels a csv line may carry, one entry per width accepted. -->
+    <integer-array name="config_patternLengths" translatable="false">
+        <item>36</item>
+    </integer-array>
+
+    <!-- The channels an essential notification holds lit, the whole of B. -->
+    <string-array name="config_essentialZones" translatable="false">
+        <item>20-30</item>
+    </string-array>
+
+    <!-- The ringtone a call plays until the user chooses another. -->
+    <string name="config_defaultCallAnimation" translatable="false">Dolphin</string>
+
+    <!-- The animation a notification plays until the user chooses another. -->
+    <string name="config_defaultNotificationAnimation" translatable="false">Sharp</string>
+
 </resources>
