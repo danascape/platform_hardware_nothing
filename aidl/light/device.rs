@@ -12,9 +12,10 @@ mod shell;
 // Selected by the nothing_glyph device soong config.
 #[cfg_attr(phone1, path = "device/phone1.rs")]
 #[cfg_attr(phone2, path = "device/phone2.rs")]
+#[cfg_attr(phone3a, path = "device/phone3a.rs")]
 mod phone;
 
-#[cfg(not(any(phone1, phone2)))]
+#[cfg(not(any(phone1, phone2, phone3a)))]
 compile_error!("Set the nothing_glyph device soong config to a phone this service supports");
 
 pub use camera::CameraCodes;
