@@ -4,13 +4,11 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:settings="http://schemas.android.com/apk/res-auto"
     android:title="@string/pref_schedule_title">
 
     <com.android.settingslib.widget.IllustrationPreference
-        android:key="glyph_schedule_illustration"
-        android:selectable="false"
-        settings:lottie_rawRes="@raw/glyph_schedule_preview" />
+        android:key="glyph_schedule_preview"
+        android:selectable="false" />
 
     <PreferenceCategory
         android:key="glyph_schedule_category"

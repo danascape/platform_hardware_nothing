@@ -23,6 +23,7 @@ class ScheduleSettingsFragment : SettingsBasePreferenceFragment() {
     private companion object {
         private const val KEY_BEDTIME = "glyph_schedule_bedtime"
         private const val KEY_HOURS = "glyph_schedule_hours"
+        private const val KEY_PREVIEW = "glyph_schedule_preview"
     }
 
     private val preferences by lazy { glyph.preferences }
@@ -30,6 +31,7 @@ class ScheduleSettingsFragment : SettingsBasePreferenceFragment() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.glyph_schedule_settings)
         activity?.setTitle(R.string.pref_schedule_title)
+        showPreview(KEY_PREVIEW)
 
         findPreference<ListPreference>(GlyphPreferences.KEY_SCHEDULE_MODE)?.apply {
             setOnPreferenceChangeListener { _, mode ->
