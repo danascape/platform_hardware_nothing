@@ -133,8 +133,7 @@ impl ILights for GlyphLights {
 
         // LightsManager only sees the non-system types.
         for kind in catalog::KINDS {
-            let count = kind.group(self.device).map_or(1, |group| group.len());
-            for index in 0..count {
+            for index in 0..kind.count(self.device) {
                 lights.push(HwLight {
                     id: kind.first_id() + index as i32,
                     ordinal: lights.len() as i32,

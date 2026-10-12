@@ -8,16 +8,14 @@
 use crate::controller::AW20036;
 
 use super::Group::Each;
-use super::{CameraCodes, Ceiling, Device, Layout};
+use super::{CameraCodes, Device, IndicatorLed, Layout, ShellLevel};
 
-pub static DEVICE: Device = Device {
+pub static DEVICE: Device<ShellLevel> = Device {
     controller: &AW20036,
     dir: "/sys/class/leds/led_strips",
     segments: 33,
-    max_brightness: 254,
-    indicator: 13,
-    indicator_level: 255,
-    white: Ceiling { max_brightness: 160, indicator_level: 140 },
+    max_brightness: ShellLevel { black: 254, white: 160 },
+    indicator: Some(IndicatorLed { led: 13, level: ShellLevel { black: 255, white: 140 } }),
     layout: Layout {
         camera: &[0, 1],
         glyphs: Each(&[
