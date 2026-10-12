@@ -38,6 +38,51 @@
         <item>36</item>
     </integer-array>
 
+    <!-- The channels each band of the music visualizer lights, in the order its tuning lists them. -->
+    <string-array name="config_visualizerZones" translatable="false">
+        <item>0-19</item> <!-- a1 -->
+        <item>20-30</item> <!-- b1 -->
+        <item>31-35</item> <!-- a2 -->
+    </string-array>
+
+    <!-- How the music visualizer reacts to sound. Each array below has one entry for each band,
+         in the order of the visualizer zones above. -->
+
+    <!-- The fft buckets each band averages, a bucket or a range of them. -->
+    <string-array name="config_visualizerBuckets" translatable="false">
+        <item>30-44</item> <!-- a1 -->
+        <item>0</item> <!-- b1 -->
+        <item>15-22</item> <!-- a2 -->
+    </string-array>
+
+    <!-- How long, in milliseconds, each band's ceiling holds after a beat. -->
+    <integer-array name="config_visualizerDecayWindows" translatable="false">
+        <item>200</item> <!-- a1 -->
+        <item>300</item> <!-- b1 -->
+        <item>500</item> <!-- a2 -->
+    </integer-array>
+
+    <!-- The part of its ceiling a value has to reach to count as a beat. -->
+    <array name="config_visualizerTriggerRatios" translatable="false">
+        <item>0.7</item> <!-- a1 -->
+        <item>0.75</item> <!-- b1 -->
+        <item>0.7</item> <!-- a2 -->
+    </array>
+
+    <!-- What each band's brightness is multiplied by each capture between beats. -->
+    <array name="config_visualizerTriggerDecays" translatable="false">
+        <item>0.66</item> <!-- a1 -->
+        <item>0.56</item> <!-- b1 -->
+        <item>0.66</item> <!-- a2 -->
+    </array>
+
+    <!-- What each band's ceiling is multiplied by each capture once it falls. -->
+    <array name="config_visualizerCeilingDecays" translatable="false">
+        <item>0.63</item> <!-- a1 -->
+        <item>0.95</item> <!-- b1 -->
+        <item>0.65</item> <!-- a2 -->
+    </array>
+
     <!-- The channels an essential notification holds lit, the whole of B. -->
     <string-array name="config_essentialZones" translatable="false">
         <item>20-30</item>
