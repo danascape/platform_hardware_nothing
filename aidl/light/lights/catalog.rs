@@ -13,7 +13,7 @@ use crate::device::{Device, Group, Segments};
 /// A kind of light, numbered by the id of its first.
 #[derive(Clone, Copy)]
 pub enum Kind {
-    /// The recording indicator, on an LED of its own.
+    /// The recording indicator, on an LED of its own, where the phone has one.
     Video = 105,
 
     /// The camera fill, either the ring or every segment.
@@ -58,6 +58,17 @@ impl Kind {
         }
     }
 
+    /// How many lights of this kind the phone has.
+    pub fn count(self, device: &'static Device) -> usize {
+        match self {
+            Kind::Video => usize::from(device.indicator.is_some()),
+            Kind::All | Kind::Camera => 1,
+            Kind::Glyphs | Kind::Volume | Kind::Battery => {
+                self.group(device).map_or(0, |group| group.len())
+            }
+        }
+    }
+
     /// The segments behind each light of a group, or `None` for a single light.
     pub fn group(self, device: &'static Device) -> Option<Group> {
         match self {
@@ -80,19 +91,15 @@ pub enum Target {
 
 /// Resolves a light id, or `None` if the phone has no such light.
 pub fn resolve(device: &'static Device, id: i32) -> Option<Target> {
-    for kind in KINDS {
-        let Some(group) = kind.group(device) else {
-            if id == kind.first_id() {
-                return Some(Target::Single(kind));
-            }
-            continue;
-        };
-
-        let index = id.checked_sub(kind.first_id()).and_then(|i| usize::try_from(i).ok());
-        if let Some(segments) = index.and_then(|i| group.get(i)) {
-            return Some(Target::Segments(segments));
+    KINDS.into_iter().find_map(|kind| {
+        let index = usize::try_from(id.checked_sub(kind.first_id())?).ok()?;
+        if index >= kind.count(device) {
+            return None;
         }
-    }
 
-    None
+        match kind.group(device) {
+            Some(group) => group.get(index).map(Target::Segments),
+            None => Some(Target::Single(kind)),
+        }
+    })
 }

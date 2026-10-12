@@ -33,12 +33,13 @@ impl Indicator {
         Indicator { device, generation: Arc::new(AtomicU64::new(0)) }
     }
 
-    /// Starts the blink, or stops it and clears the LED.
+    /// Starts the blink, or stops it and clears the LED. Does nothing on a phone without one.
     pub fn set(&self, on: bool) {
+        let Some(led) = self.device.indicator else { return };
         let mine = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
 
         if !on {
-            if let Err(e) = self.device.write_indicator(0) {
+            if let Err(e) = self.device.write_led(led.led, 0) {
                 error!("Failed to clear the indicator: {e}");
             }
             return;
@@ -49,8 +50,8 @@ impl Indicator {
 
         thread::spawn(move || {
             while generation.load(Ordering::SeqCst) == mine {
-                for level in [device.indicator_level, 0] {
-                    if let Err(e) = device.write_indicator(level) {
+                for level in [led.level, 0] {
+                    if let Err(e) = device.write_led(led.led, level) {
                         error!("Failed to blink the indicator: {e}");
                         return;
                     }
