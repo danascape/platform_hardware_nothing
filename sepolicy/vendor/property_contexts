@@ -1,2 +1,6 @@
 # Glyph
 persist.vendor.glyph.           u:object_r:vendor_glyph_prop:s0
+
+# Vibrator
+persist.vendor.sfdc             u:object_r:vendor_haptic_prop:s0
+vendor.haptic.calibrate.done    u:object_r:vendor_haptic_prop:s0 exact bool

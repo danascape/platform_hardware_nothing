@@ -12,3 +12,6 @@ genfscon sysfs /devices/platform/soc/8c0000.qcom,qupv3_1_geni_se/880000.i2c/i2c-
 genfscon sysfs /devices/platform/soc/8c0000.qcom,qupv3_1_geni_se/880000.i2c/i2c-7/7-003a/leds/aw20036_led/frame_brightness        u:object_r:sysfs_leds:s0
 genfscon sysfs /devices/platform/soc/8c0000.qcom,qupv3_1_geni_se/880000.i2c/i2c-7/7-003a/leds/aw20036_led/operating_mode          u:object_r:sysfs_leds:s0
 genfscon sysfs /devices/platform/soc/8c0000.qcom,qupv3_1_geni_se/880000.i2c/i2c-7/7-003a/leds/aw20036_led/single_brightness       u:object_r:sysfs_leds:s0
+
+# Vibrator
+genfscon proc /haptic/f0    u:object_r:proc_haptic:s0
