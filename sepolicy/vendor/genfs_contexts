@@ -3,3 +3,6 @@ genfscon proc /touchpanel u:object_r:vendor_proc_display:s0
 
 # Fingerprint
 genfscon proc /touchpanel/fod_mode                               u:object_r:vendor_proc_fingerprint:s0
+
+# Vibrator
+genfscon proc /haptic/f0                               u:object_r:proc_haptic:s0

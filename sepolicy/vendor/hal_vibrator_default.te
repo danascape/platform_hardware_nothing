@@ -1,0 +1,9 @@
+allow hal_vibrator_default aac_richtap_device:chr_file rw_file_perms;
+
+# Keep the f0 the bootloader measured and hand it to the driver
+allow hal_vibrator_default mnt_vendor_file:dir search;
+allow hal_vibrator_default vendor_persist_haptic_file:dir rw_dir_perms;
+allow hal_vibrator_default vendor_persist_haptic_file:file create_file_perms;
+allow hal_vibrator_default proc_haptic:file w_file_perms;
+
+get_prop(hal_vibrator_default, vendor_haptic_prop)
