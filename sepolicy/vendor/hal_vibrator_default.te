@@ -6,4 +6,7 @@ allow hal_vibrator_default vendor_persist_haptic_file:dir rw_dir_perms;
 allow hal_vibrator_default vendor_persist_haptic_file:file create_file_perms;
 allow hal_vibrator_default proc_haptic:file w_file_perms;
 
+# Factory parameters for f0 tracking, left in place by the factory
+allow hal_vibrator_default mnt_vendor_file:file r_file_perms;
+
 get_prop(hal_vibrator_default, vendor_haptic_prop)
