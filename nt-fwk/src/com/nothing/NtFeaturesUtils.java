@@ -11,11 +11,9 @@ import android.os.SystemProperties;
 import java.math.BigInteger;
 import java.util.BitSet;
 
-public class NtFeaturesUtils {
+public class NtFeaturesUtils extends NtFeatures {
 
-    private static final int MAX_FEATURES = 160;
-
-    private static final BitSet sFeatures = new BitSet(MAX_FEATURES);
+    private static final BitSet sFeatures = new BitSet(FEATURE_LENGTH);
 
     static {
         final String fullProp = SystemProperties.get("ro.build.nothing.feature.base", "0");
@@ -41,7 +39,7 @@ public class NtFeaturesUtils {
 
     public static boolean isSupport(int... features) {
         for (int feature : features) {
-            if (feature < 0 || feature >= MAX_FEATURES) {
+            if (feature < 0 || feature >= FEATURE_LENGTH) {
                 return false;
             }
             if (!sFeatures.get(feature)) {
