@@ -3,7 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#pragma once
+
 #include <aidl/android/hardware/vibrator/BnVibrator.h>
+
+#include <atomic>
+#include <chrono>
+#include <map>
+#include <mutex>
+#include <vector>
 
 namespace aidl {
 namespace android {
@@ -13,6 +21,8 @@ namespace vibrator {
 class Vibrator : public BnVibrator {
   public:
     Vibrator();
+
+    void init();
 
     ndk::ScopedAStatus getCapabilities(int32_t* _aidl_return) override;
     ndk::ScopedAStatus off() override;
@@ -24,8 +34,8 @@ class Vibrator : public BnVibrator {
     ndk::ScopedAStatus getSupportedEffects(std::vector<Effect>* _aidl_return) override;
     ndk::ScopedAStatus setAmplitude(float amplitude) override;
     ndk::ScopedAStatus setExternalControl(bool enabled) override;
-    ndk::ScopedAStatus getCompositionDelayMax(int32_t* maxDelayMs);
-    ndk::ScopedAStatus getCompositionSizeMax(int32_t* maxSize);
+    ndk::ScopedAStatus getCompositionDelayMax(int32_t* maxDelayMs) override;
+    ndk::ScopedAStatus getCompositionSizeMax(int32_t* maxSize) override;
     ndk::ScopedAStatus getSupportedPrimitives(std::vector<CompositePrimitive>* supported) override;
     ndk::ScopedAStatus getPrimitiveDuration(CompositePrimitive primitive,
                                             int32_t* durationMs) override;
@@ -44,6 +54,22 @@ class Vibrator : public BnVibrator {
     ndk::ScopedAStatus getSupportedBraking(std::vector<Braking>* supported) override;
     ndk::ScopedAStatus composePwle(const std::vector<PrimitivePwle>& composite,
                                    const std::shared_ptr<IVibratorCallback>& callback) override;
+
+  private:
+    int32_t playHe(int32_t looper, int32_t interval, int32_t amplitude, int32_t freq,
+                   const std::vector<int32_t>& he);
+    void notifyAfter(int32_t delayMs, const std::shared_ptr<IVibratorCallback>& callback);
+    void startOnLocked();
+
+    std::atomic<bool> mInited{false};
+    std::atomic<uint32_t> mGeneration{0};
+    std::map<std::pair<EffectStrength, Effect>, std::vector<int32_t>> mEffects;
+    std::chrono::steady_clock::time_point mLastPerform;
+
+    std::mutex mLock;
+    int32_t mPendingOnMs = 0;
+    uint32_t mOnGeneration = 0;
+    uint8_t mAmplitude = 0xff;
 };
 
 }  // namespace vibrator
