@@ -4,8 +4,11 @@
  */
 
 #include <android-base/logging.h>
+#include <android-base/properties.h>
 #include <android/binder_manager.h>
 #include <android/binder_process.h>
+
+#include <thread>
 
 #include "Vibrator.h"
 
@@ -18,6 +21,12 @@ int main() {
     const std::string instance = std::string() + Vibrator::descriptor + "/default";
     binder_status_t status = AServiceManager_addService(vib->asBinder().get(), instance.c_str());
     CHECK(status == STATUS_OK);
+
+    std::thread([vib] {
+        android::base::WaitForProperty("vendor.haptic.calibrate.done", "1",
+                                       std::chrono::seconds(500));
+        vib->init();
+    }).detach();
 
     ABinderProcess_joinThreadPool();
     return EXIT_FAILURE;  // should not reach
