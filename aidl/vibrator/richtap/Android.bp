@@ -34,3 +34,8 @@ cc_library_shared {
     name: "libaacvibrator",
     soc_specific: true,
 }
+
+cc_library_shared {
+    name: "libics_haptic",
+    soc_specific: true,
+}
