@@ -20,11 +20,10 @@ cc_binary {
         "Vibrator.cpp",
     ],
     shared_libs: [
-        "libcutils",
-        "libutils",
-        "liblog",
         "libbase",
         "libbinder_ndk",
+        "libjsoncpp",
+        "liblog",
         "libaacvibrator",
         "libics_haptic",
         "android.hardware.vibrator-V2-ndk",
