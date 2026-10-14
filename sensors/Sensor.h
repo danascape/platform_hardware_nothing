@@ -111,6 +111,7 @@ class SysfsPollingOneShotSensor : public OneShotSensor {
 
   protected:
     virtual void run() override;
+    virtual bool readTriggered(int fd);
 
     std::ofstream mEnableStream;
 
@@ -162,6 +163,17 @@ class UdfpsSensor : public SysfsPollingOneShotSensor {
                                     std::nullopt, "UDFPS Sensor", "org.lineageos.sensor.udfps",
                                     static_cast<SensorType>(SENSOR_TYPE_BASE + 3)) {
     }
+
+#ifdef PANEL_UDFPS_REPORTS_POSITION
+    virtual void fillEventData(Event& event) override;
+
+  protected:
+    virtual bool readTriggered(int fd) override;
+
+  private:
+    int mScreenX = 0;
+    int mScreenY = 0;
+#endif
 };
 
 }  // namespace implementation
