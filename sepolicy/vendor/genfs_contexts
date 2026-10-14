@@ -4,6 +4,11 @@ genfscon proc /touchpanel u:object_r:vendor_proc_display:s0
 # Fingerprint
 genfscon proc /touchpanel/fod_mode    u:object_r:vendor_proc_fingerprint:s0
 
+# Lights - Nothing (1)
+genfscon sysfs /devices/platform/soc/984000.i2c/i2c-0/0-0020/leds/aw210xx_led/all_white_leds_br    u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/soc/984000.i2c/i2c-0/0-0020/leds/aw210xx_led/frame_leds_effect    u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/soc/984000.i2c/i2c-0/0-0020/leds/aw210xx_led/single_led_br        u:object_r:sysfs_leds:s0
+
 # Lights - Nothing 3a
 genfscon sysfs /devices/platform/soc/8c0000.qcom,qupv3_1_geni_se/880000.i2c/i2c-7/7-003a/leds/aw20036_led/all_brightness    u:object_r:sysfs_leds:s0
 genfscon sysfs /devices/platform/soc/8c0000.qcom,qupv3_1_geni_se/880000.i2c/i2c-7/7-003a/leds/aw20036_led/always_on         u:object_r:sysfs_leds:s0
