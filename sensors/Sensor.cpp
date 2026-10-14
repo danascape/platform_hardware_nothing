@@ -21,6 +21,7 @@
 #include <utils/SystemClock.h>
 
 #include <cmath>
+#include <cstdio>
 
 namespace {
 
@@ -333,7 +334,7 @@ void SysfsPollingOneShotSensor::run() {
                 continue;
             }
 
-            if (mPolls[1].revents == mPolls[1].events && readBool(mPollFd, true /* seek */)) {
+            if (mPolls[1].revents == mPolls[1].events && readTriggered(mPollFd)) {
                 activate(false, false, false);
                 mCallback->postEvents(readEvents(), isWakeUpSensor());
             } else if (mPolls[0].revents == mPolls[0].events) {
@@ -341,6 +342,10 @@ void SysfsPollingOneShotSensor::run() {
             }
         }
     }
+}
+
+bool SysfsPollingOneShotSensor::readTriggered(int fd) {
+    return readBool(fd, true /* seek */);
 }
 
 void SysfsPollingOneShotSensor::interruptPoll() {
@@ -394,6 +399,38 @@ void SysfsPollingOneShotSensor::readCoordinates(float* x, float* y) {
     *x = static_cast<float>(rawX);
     *y = static_cast<float>(rawY);
 }
+
+#ifdef PANEL_UDFPS_REPORTS_POSITION
+bool UdfpsSensor::readTriggered(int fd) {
+    char buffer[64] = {};
+    int state = 0;
+    int rc;
+
+    rc = lseek(fd, 0, SEEK_SET);
+    if (rc) {
+        ALOGE("failed to seek: %d", rc);
+        return false;
+    }
+
+    rc = read(fd, buffer, sizeof(buffer) - 1);
+    if (rc < 0) {
+        ALOGE("failed to read state: %d", rc);
+        return false;
+    }
+
+    // Reported as x,y,state
+    if (sscanf(buffer, "%d,%d,%d", &mScreenX, &mScreenY, &state) != 3) {
+        return false;
+    }
+
+    return state > 0;
+}
+
+void UdfpsSensor::fillEventData(Event& event) {
+    event.u.data[0] = mScreenX;
+    event.u.data[1] = mScreenY;
+}
+#endif
 
 }  // namespace implementation
 }  // namespace subhal

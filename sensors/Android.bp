@@ -45,6 +45,9 @@ cc_library_shared {
     }) + select(soong_config_variable("nothing_sensors", "tp_udfps_enabled_path"), {
         any @ flag_val: ["-DPANEL_UDFPS_ENABLED_PATH=\"" + flag_val + "\""],
         default: [],
+    }) + select(soong_config_variable("nothing_sensors", "tp_udfps_reports_position"), {
+        "true": ["-DPANEL_UDFPS_REPORTS_POSITION"],
+        default: [],
     }),
     vendor: true,
 }
