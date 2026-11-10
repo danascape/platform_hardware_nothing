@@ -27,6 +27,9 @@ class GlyphConfig(context: Context) {
     /** The type of the light sensor behind the strips, empty where there is none. */
     val ambientSensorType: String = resources.getString(R.string.config_ambientSensorType)
 
+    /** The type of the sensor that reports the screen facing down, empty where there is none. */
+    val flipSensorType: String = resources.getString(R.string.config_flipSensorType)
+
     /** The level auto brightness lights a black shell at, from the lux each step starts at. */
     val ambientSteps = steps(R.array.config_ambientLevels)
 
