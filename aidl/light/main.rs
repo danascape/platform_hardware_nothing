@@ -29,6 +29,7 @@ fn main() {
 
     let shell = Shell::read();
     shell.publish();
+    DEVICE.tell_shell();
     let device: &'static Device = Box::leak(Box::new(DEVICE.for_shell(shell)));
 
     let service = BnLights::new_binder(GlyphLights::new(device), BinderFeatures::default());
