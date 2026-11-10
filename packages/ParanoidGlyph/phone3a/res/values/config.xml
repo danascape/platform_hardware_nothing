@@ -82,6 +82,9 @@
         <item>0.65</item> <!-- a2 -->
     </array>
 
+    <!-- How long, in milliseconds, a band waits after a beat before it can beat again. -->
+    <integer name="config_visualizerRetrigger" translatable="false">180</integer>
+
     <!-- The channels an essential notification holds lit, the whole of B. -->
     <string-array name="config_essentialZones" translatable="false">
         <item>20-30</item>
