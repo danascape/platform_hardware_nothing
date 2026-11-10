@@ -10,6 +10,7 @@ what each pattern does.
 |---|---|---|
 | Phone (1) | Spacewar | `phone1` |
 | Phone (2) | Pong | `phone2` |
+| Phone (3a), Phone (3a) Pro | asteroids | `phone3a` |
 
 ## Setup
 
