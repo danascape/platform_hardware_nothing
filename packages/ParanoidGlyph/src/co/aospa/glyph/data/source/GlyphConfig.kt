@@ -6,6 +6,7 @@
 package co.aospa.glyph.data.source
 
 import android.content.Context
+import android.os.SystemProperties
 import androidx.core.content.res.use
 import co.aospa.glyph.R
 import co.aospa.glyph.data.model.VisualizerBand
@@ -13,6 +14,11 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** What this device's strips are, as its resources describe them. */
 class GlyphConfig(context: Context) {
+    private companion object {
+        /** The property that holds the shell color, as black or white. */
+        private const val SHELL_PROPERTY = "persist.vendor.glyph.color"
+    }
+
     private val resources = context.resources
 
     /** The device the resources were built for. */
@@ -21,8 +27,18 @@ class GlyphConfig(context: Context) {
     /** Highest level the strips accept. */
     val maxBrightness: Int = resources.getInteger(R.integer.config_brightnessMax)
 
-    /** The levels the brightness slider steps through. */
-    val brightnessLevels: IntArray = resources.getIntArray(R.array.config_brightnessLevels)
+    /** Whether the shell is white, which diffuses more light than a black one. */
+    val isWhiteShell: Boolean
+        get() = SystemProperties.get(SHELL_PROPERTY) == "white"
+
+    private val blackBrightnessLevels = resources.getIntArray(R.array.config_brightnessLevels)
+    private val whiteBrightnessLevels = resources.getIntArray(R.array.config_brightnessLevelsWhite)
+
+    /** The levels the brightness slider steps through, the white shell's where it has its own. */
+    val brightnessLevels: IntArray
+        get() =
+            whiteBrightnessLevels.takeIf { it.isNotEmpty() && isWhiteShell }
+                ?: blackBrightnessLevels
 
     /** The type of the light sensor behind the strips, empty where there is none. */
     val ambientSensorType: String = resources.getString(R.string.config_ambientSensorType)
