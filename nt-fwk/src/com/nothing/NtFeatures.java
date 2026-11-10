@@ -8,7 +8,7 @@ package com.nothing;
 /** Bit positions of the features advertised by ro.build.nothing.feature.*. */
 public class NtFeatures {
 
-    static final int FEATURE_LENGTH = 160;
+    static final int FEATURE_LENGTH = 164;
 
     public static final int NTF_NAVBAR_SWITCH = 0;
     public static final int NTF_SCREENSHOT_SOUND = 1;
@@ -169,4 +169,8 @@ public class NtFeatures {
     public static final int NTF_PJ_DOO = 156;
     public static final int NTF_PJ_QUA = 157;
     public static final int NTF_LP_BRIGHTNESS_STRATEGY = 158;
+    public static final int NTF_MIC_SWITCH = 159;
+    public static final int NTF_PJ_BZB = 160;
+    public static final int NTF_PJ_BCP = 161;
+    public static final int NTF_PJ_SAL = 162;
 }
