@@ -18,6 +18,13 @@
         <item>2071</item>
     </integer-array>
 
+    <!-- The levels on a white shell, which diffuses more light. -->
+    <integer-array name="config_brightnessLevelsWhite" translatable="false">
+        <item>979</item>
+        <item>1365</item>
+        <item>2232</item>
+    </integer-array>
+
     <!-- The wake-up sensor that reports the screen facing down. -->
     <string name="config_flipSensorType" translatable="false">android.sensor.screen_upward</string>
 

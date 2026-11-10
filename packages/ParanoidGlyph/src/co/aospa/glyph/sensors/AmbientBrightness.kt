@@ -10,7 +10,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.SystemProperties
 import co.aospa.glyph.data.source.GlyphConfig
 import co.aospa.glyph.util.requireSystemService
 import co.aospa.glyph.util.wakeUpSensor
@@ -29,9 +28,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  */
 class AmbientBrightness(private val context: Context, private val config: GlyphConfig) {
     private companion object {
-        /** The property that holds the shell color, as black or white. */
-        private const val SHELL_PROPERTY = "persist.vendor.glyph.color"
-
         /**
          * How long the sensor may hold readings back, so that it need not wake the cpu for each.
          */
@@ -57,7 +53,8 @@ class AmbientBrightness(private val context: Context, private val config: GlyphC
                     return@callbackFlow
                 }
 
-                val steps = if (isWhiteShell()) config.ambientStepsWhite else config.ambientSteps
+                val steps =
+                    if (config.isWhiteShell) config.ambientStepsWhite else config.ambientSteps
 
                 val listener =
                     object : SensorEventListener {
@@ -86,6 +83,4 @@ class AmbientBrightness(private val context: Context, private val config: GlyphC
         val level = steps.entries.lastOrNull { it.key <= lux }?.value ?: steps.values.first()
         return config.maxBrightness * level / steps.values.max()
     }
-
-    private fun isWhiteShell() = SystemProperties.get(SHELL_PROPERTY) == "white"
 }
