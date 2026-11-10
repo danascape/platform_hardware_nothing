@@ -59,7 +59,10 @@ android_app {
     required: [
         "GlyphAdapter",
         "whitelist_co.aospa.glyph",
-    ],
+    ] + select(soong_config_variable("nothing_glyph", "device"), {
+        "phone3a": ["ParanoidGlyphPhone3aProRes"],
+        default: [],
+    }),
 }
 
 prebuilt_etc {
