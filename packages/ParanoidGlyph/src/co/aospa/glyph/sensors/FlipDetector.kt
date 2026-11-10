@@ -12,8 +12,11 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
 import co.aospa.glyph.util.GlyphLog
+import co.aospa.glyph.util.glyph
 import co.aospa.glyph.util.requireSystemService
+import co.aospa.glyph.util.wakeUpSensor
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
@@ -21,6 +24,9 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 
 /**
  * Reports when the device is flipped face down, and when it is flipped back, and when it is wiggled
@@ -28,23 +34,41 @@ import kotlinx.coroutines.flow.callbackFlow
  *
  * The strips are on the back, so flipped is when they face the room.
  *
- * Derived from frameworks/base/services/core/java/com/android/server/power/FaceDownDetector.java,
- * which the framework keeps to itself.
+ * Where the device has a sensor that reports the screen facing down, flipped follows it, as stock
+ * does. Otherwise it is worked out from the accelerometer, derived from
+ * frameworks/base/services/core/java/com/android/server/power/FaceDownDetector.java, which the
+ * framework keeps to itself.
  *
  * @property context the context to read the sensors of.
  */
 class FlipDetector(private val context: Context) {
     private companion object {
         private const val TAG = "GlyphFlipDetector"
+
+        /** What the flip sensor reports while the screen faces down. */
+        private const val FACE_DOWN = 2
     }
 
     /**
      * Whether the device is flipped, each time that changes.
      *
-     * The accelerometer is read while the flow is collected, and only then.
+     * The flip sensor, or the accelerometer where there is none, is read while the flow is
+     * collected, and only then.
      */
-    val isFlipped: Flow<Boolean> = accelerometer { channel ->
-        Tracker(onFlipped = { channel.trySend(it) })
+    val isFlipped: Flow<Boolean> = flow {
+        val sensorManager = context.requireSystemService<SensorManager>()
+        val sensor =
+            context.glyph.config.flipSensorType
+                .takeIf { it.isNotEmpty() }
+                ?.let(sensorManager::wakeUpSensor)
+
+        emitAll(
+            if (sensor != null) {
+                facingDown(sensor)
+            } else {
+                accelerometer { channel -> Tracker(onFlipped = { channel.trySend(it) }) }
+            }
+        )
     }
 
     /**
@@ -55,6 +79,32 @@ class FlipDetector(private val context: Context) {
     val isWiggling: Flow<Boolean> = accelerometer { channel ->
         Tracker(onWiggling = { channel.trySend(it) })
     }
+
+    /** Whether the screen faces down, as [sensor] reports it, while the flow is collected. */
+    private fun facingDown(sensor: Sensor): Flow<Boolean> =
+        callbackFlow {
+                val sensorManager = context.requireSystemService<SensorManager>()
+                val listener =
+                    object : SensorEventListener {
+                        override fun onSensorChanged(event: SensorEvent) {
+                            val state = event.values.firstOrNull() ?: return
+                            trySend(state.roundToInt() == FACE_DOWN)
+                        }
+
+                        override fun onAccuracyChanged(changed: Sensor, accuracy: Int) {
+                            // Do nothing.
+                        }
+                    }
+
+                GlyphLog.d(TAG) { "Registered ${sensor.stringType} listener" }
+                sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+
+                awaitClose {
+                    GlyphLog.d(TAG) { "Unregistered ${sensor.stringType} listener" }
+                    sensorManager.unregisterListener(listener)
+                }
+            }
+            .distinctUntilChanged()
 
     /** What the listener made by [create] sends, while the flow is collected. */
     private fun <T> accelerometer(create: (SendChannel<T>) -> SensorEventListener): Flow<T> =

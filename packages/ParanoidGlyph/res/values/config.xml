@@ -15,6 +15,10 @@
     <integer-array name="config_brightnessLevels" translatable="false">
     </integer-array>
 
+    <!-- The type of the wake-up sensor that reports the screen facing down, as 2. Empty where the
+         accelerometer has to tell. -->
+    <string name="config_flipSensorType" translatable="false"></string>
+
     <!-- The type of the light sensor behind the strips. Empty where there is none. -->
     <string name="config_ambientSensorType" translatable="false"></string>
 

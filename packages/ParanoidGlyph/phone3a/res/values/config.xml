@@ -18,6 +18,9 @@
         <item>2071</item>
     </integer-array>
 
+    <!-- The wake-up sensor that reports the screen facing down. -->
+    <string name="config_flipSensorType" translatable="false">android.sensor.screen_upward</string>
+
     <!-- The glyphs of the device drawing. -->
     <array name="config_glyphViews" translatable="false">
         <item>@id/preview_device_a1</item>
