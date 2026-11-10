@@ -36,7 +36,7 @@ pub enum Shell {
 
 impl Shell {
     /// The factory's record of the color.
-    const RECORD: &'static str = "/mnt/vendor/persist/color";
+    pub(crate) const RECORD: &'static str = "/mnt/vendor/persist/color";
 
     /// Where the color is published, for whatever reads it.
     const PROPERTY: &'static str = "persist.vendor.glyph.color";

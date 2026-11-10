@@ -23,7 +23,11 @@ pub use layout::{Group, Layout, Segments};
 pub use phone::DEVICE;
 pub use shell::{Shell, ShellLevel};
 
+use std::fs;
 use std::io::Result;
+use std::path::Path;
+
+use log::warn;
 
 use crate::controller::{Controller, Node};
 
@@ -45,6 +49,9 @@ pub struct Device<Level = u32> {
     /// The directory the driver registered its nodes in.
     dir: &'static str,
 
+    /// The node that tells the driver the shell is black, where it takes one.
+    shell_node: Option<&'static str>,
+
     /// Levels one frame carries.
     pub segments: usize,
 
@@ -61,11 +68,26 @@ pub struct Device<Level = u32> {
 }
 
 impl Device<ShellLevel> {
+    /// Tells the driver the shell is black, where it takes the color. Stock only does so for a
+    /// record of black, and leaves the driver as it is for any other.
+    pub fn tell_shell(&self) {
+        let Some(node) = self.shell_node else { return };
+        let Ok(record) = fs::read_to_string(Shell::RECORD) else { return };
+        if !record.trim().to_ascii_uppercase().starts_with("BLACK") {
+            return;
+        }
+
+        if let Err(e) = fs::write(Path::new(self.dir).join(node), "BLACK") {
+            warn!("Failed to tell the driver the shell color: {e}");
+        }
+    }
+
     /// This phone fitted for its shell.
     pub fn for_shell(&self, shell: Shell) -> Device {
         Device {
             controller: self.controller,
             dir: self.dir,
+            shell_node: self.shell_node,
             segments: self.segments,
             max_brightness: self.max_brightness.for_shell(shell),
             indicator: self.indicator.map(|indicator| IndicatorLed {

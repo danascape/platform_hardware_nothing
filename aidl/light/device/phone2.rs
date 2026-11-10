@@ -13,6 +13,7 @@ use super::{CameraCodes, Device, IndicatorLed, Layout, ShellLevel};
 pub static DEVICE: Device<ShellLevel> = Device {
     controller: &AW20036,
     dir: "/sys/class/leds/led_strips",
+    shell_node: None,
     segments: 33,
     max_brightness: ShellLevel { black: 254, white: 160 },
     indicator: Some(IndicatorLed { led: 13, level: ShellLevel { black: 255, white: 140 } }),
